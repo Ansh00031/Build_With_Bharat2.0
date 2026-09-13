@@ -48,16 +48,20 @@ def query_windows_event_logs(
     error_msg: Optional[str] = None
 
     # PowerShell script to safely query events and format as JSON
-    # Level 1 = Critical, Level 2 = Error. For full auto-scans, filter to recent 4 hours to avoid stale historical logs.
+    # Level 1 = Critical, Level 2 = Error.
+    # For full auto-scans, query System and Application channels from recent 1 hour to focus on active OS issues.
+    channels_ps = "@('System', 'Application', 'Microsoft-Windows-WindowsUpdateClient/Operational')" if error_code else "@('System', 'Application')"
+    start_time_ps = "$filter['StartTime'] = (Get-Date).AddHours(-1)" if not error_code else ""
+
     ps_script = f"""
     $ErrorActionPreference = 'SilentlyContinue'
     $results = @()
-    $channels = @('System', 'Application', 'Microsoft-Windows-WindowsUpdateClient/Operational')
+    $channels = {channels_ps}
     $filter = @{{
         LogName = 'System'
         Level = 1, 2
     }}
-    {"$filter['StartTime'] = (Get-Date).AddHours(-4)" if not error_code else ""}
+    {start_time_ps}
 
     foreach ($chan in $channels) {{
         try {{

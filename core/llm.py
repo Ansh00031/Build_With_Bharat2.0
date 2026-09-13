@@ -780,6 +780,10 @@ Write-Host "[5/5] Re-enabling and starting Windows Update services..." -Foregrou
 Set-Service -Name wuauserv, bits, cryptsvc -StartupType Automatic -ErrorAction SilentlyContinue
 Start-Service -Name wuauserv, bits, cryptsvc -ErrorAction SilentlyContinue
 
+# Clear old event log history and trigger fresh update handshake
+wevtutil cl "Microsoft-Windows-WindowsUpdateClient/Operational" 2>$null
+(New-Object -ComObject Microsoft.Update.AutoUpdate).DetectNow() 2>$null
+
 Write-Host "`n[SUCCESS] Windows Update proxy, policies, and DataStore cache have been reset." -ForegroundColor Green
 """
         return {
